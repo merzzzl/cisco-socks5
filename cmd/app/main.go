@@ -63,9 +63,7 @@ func main() {
 
 	mainLoop := cl.New(mainController, mc, cl.WithLogger(log.NewLogger()))
 	mainReconcileExit := mainLoop.Run()
-	log.Info().Msg("Main", "Start RUN main loop")
-
-	fmt.Println("Warp Reconciles starting...")
+	log.Info().Msg("Main", "Start run main loop")
 
 	ctxExit, cancel := context.WithCancel(context.Background())
 

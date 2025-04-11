@@ -37,7 +37,7 @@ func NewRepository(localUsername, localHost, tunnelAddress string) *Repository {
 func (r *Repository) StartTunnel(privateKeyPath string) (int, error) {
 
 	localhost := fmt.Sprintf("%s@%s", r.localUsername, r.localHost)
-	cmd := exec.Command("ssh", "-i", privateKeyPath, "-D", r.tunnelAddress, "-N", localhost)
+	cmd := exec.Command("ssh", "-o", "StrictHostKeyChecking=no", "-i", privateKeyPath, "-D", r.tunnelAddress, "-N", localhost)
 
 	// Запускаем в фоне
 	if err := cmd.Start(); err != nil {
