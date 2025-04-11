@@ -83,7 +83,7 @@ jobs:
           git remote set-url origin https://dhnikolas:${{ secrets.SECRET_TOKEN }}@github.com/dhnikolas/homebrew-tools.git
           cd homebrew-tools
           echo -e '
-          class Warpserver < Formula
+          class WarpServer < Formula
             desc "Tool for quick clone layouts repo"
             homepage "https://github.com/${{ steps.vars.outputs.repo }}"
             url "https://github.com/${{ steps.vars.outputs.repo }}/releases/download/${{ steps.vars.outputs.tag }}/${{ steps.vars.outputs.project_name }}-${{ steps.vars.outputs.tag }}-osx.tar.gz"
