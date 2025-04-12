@@ -6,11 +6,12 @@ import (
 )
 
 type Resource struct {
-	conditions    []Condition
-	m             *sync.RWMutex
-	killTimestamp string
-	killMutex     *sync.Mutex
-	finalizer     chan struct{}
+	conditions        []Condition
+	m                 *sync.RWMutex
+	killTimestamp     string
+	killMutex         *sync.Mutex
+	deletionMutex     *sync.Mutex
+	deletionTimestamp string
 }
 
 type Condition struct {
@@ -20,18 +21,14 @@ type Condition struct {
 	Message string
 }
 
-func NewResource() Resource {
-	return Resource{m: &sync.RWMutex{}, killMutex: &sync.Mutex{}, finalizer: make(chan struct{})}
-}
-
-func (r *Resource) Finalizer() <-chan struct{} {
-	return r.finalizer
-}
-func (r *Resource) DoneFinalizer() {
-	close(r.finalizer)
+func NewResource() *Resource {
+	return &Resource{m: &sync.RWMutex{}, killMutex: &sync.Mutex{}}
 }
 
 func (r *Resource) SetKillTimestamp(time time.Time) {
+	if r.killMutex == nil {
+		return
+	}
 	r.killMutex.Lock()
 	defer r.killMutex.Unlock()
 	if r.killTimestamp == "" {
@@ -43,6 +40,23 @@ func (r *Resource) KillTimestamp() string {
 	r.killMutex.Lock()
 	defer r.killMutex.Unlock()
 	return r.killTimestamp
+}
+
+func (r *Resource) SetDeletionTimestamp(time time.Time) {
+	if r.deletionMutex == nil {
+		return
+	}
+	r.deletionMutex.Lock()
+	defer r.deletionMutex.Unlock()
+	if r.deletionTimestamp == "" {
+		r.deletionTimestamp = time.Format("2006-01-02 15:04:05")
+	}
+}
+
+func (r *Resource) DeletionTimestamp() string {
+	r.deletionMutex.Lock()
+	defer r.deletionMutex.Unlock()
+	return r.deletionTimestamp
 }
 
 func (r *Resource) setCondition(name, status, reason, message string) {

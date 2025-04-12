@@ -37,7 +37,7 @@ func main() {
 
 	newResource := cl.NewResource()
 	mc := &api.MainConfig{
-		Resource: newResource,
+		Resource: *newResource,
 		Spec:     api.MainConfigSpec{},
 	}
 
@@ -61,7 +61,8 @@ func main() {
 		tunnelService,
 	)
 
-	mainLoop := cl.New(mainController, mc, cl.WithLogger(log.NewLogger()))
+	mainLoop := cl.New(mainController, cl.WithLogger(log.NewLogger()))
+	mainLoop.Queue.AddResource(mc)
 	mainReconcileExit := mainLoop.Run()
 	log.Info().Msg("Main", "Start run main loop")
 

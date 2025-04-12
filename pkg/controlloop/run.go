@@ -3,6 +3,9 @@ package controlloop
 import (
 	"context"
 	"fmt"
+	"k8s.io/client-go/util/workqueue"
+	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -14,69 +17,101 @@ type ControlLoop struct {
 	object      ResourceObject
 	stopChannel chan struct{}
 	l           Logger
+	Queue       *Queue[ResourceObject]
+	concurrency int
 }
 
-func New(r Reconcile, object ResourceObject, options ...ClOption) *ControlLoop {
+func New(r Reconcile, options ...ClOption) *ControlLoop {
 	currentOptions := &opts{}
 	for _, o := range options {
 		o(currentOptions)
 	}
-	controlLoop := &ControlLoop{r: r, object: object, stopChannel: make(chan struct{})}
+	typedRateLimitingQueueConfig := workqueue.TypedRateLimitingQueueConfig[ResourceObject]{}
+	typedRateLimitingQueueConfig.DelayingQueue = workqueue.NewTypedDelayingQueue[ResourceObject]()
+	controlLoop := &ControlLoop{
+		r:           r,
+		stopChannel: make(chan struct{}),
+		Queue:       NewQueue(),
+	}
 
 	if currentOptions.logger != nil {
 		controlLoop.l = currentOptions.logger
 	} else {
 		controlLoop.l = &logger{}
 	}
+
+	if currentOptions.concurrency > 0 {
+		controlLoop.concurrency = currentOptions.concurrency
+	} else {
+		controlLoop.concurrency = 1
+	}
 	return controlLoop
 }
 
 func (cl *ControlLoop) Run() <-chan struct{} {
 	exitChannel := make(chan struct{})
+	stopping := atomic.Bool{}
+	stopping.Store(false)
+
 	go func() {
-		defer func() {
-			exitChannel <- struct{}{}
-		}()
-		object := cl.object
+		<-cl.stopChannel
+		delayQueueLen := cl.Queue.len()
+		if delayQueueLen > 0 {
+			stopping.Store(true)
+			for object, _ := range cl.Queue.getExistedItems() {
+				cl.Queue.queue.Add(object)
+			}
+		} else {
+			cl.Queue.queue.ShutDownWithDrain()
+		}
+	}()
+
+	f := func(wg *sync.WaitGroup) {
+		defer wg.Done()
+
 		r := cl.r
 		ctx := context.Background()
-		ticker := time.NewTicker(defaultReconcileTime)
-		result, err := cl.reconcile(ctx, r, object)
-		switch {
-		case err != nil:
-			cl.l.Error(err)
-			ticker.Reset(errorReconcileTime)
-		case result.RequeueAfter > 0:
-			ticker.Reset(result.RequeueAfter)
-		default:
-			ticker.Reset(defaultReconcileTime)
-		}
-
 		for {
-			select {
-			case <-object.Finalizer():
+			object, exit := cl.Queue.get()
+			if exit {
 				return
-			default:
-				select {
-				case <-cl.stopChannel:
-					object.SetKillTimestamp(time.Now())
-				case <-ticker.C:
-				}
+			}
+
+			if stopping.Load() {
+				object.SetKillTimestamp(time.Now())
 			}
 
 			result, err := cl.reconcile(ctx, r, object)
 			switch {
 			case err != nil:
 				cl.l.Error(err)
-				ticker.Reset(errorReconcileTime)
+				cl.Queue.addRateLimited(object)
 			case result.RequeueAfter > 0:
-				ticker.Reset(result.RequeueAfter)
+				cl.Queue.addAfter(object, result.RequeueAfter)
+			case result.Requeue:
+				cl.Queue.add(object)
 			default:
-				ticker.Reset(defaultReconcileTime)
+				cl.Queue.finalize(object)
 			}
 
+			cl.Queue.done(object)
+			if stopping.Load() && cl.Queue.len() == 0 {
+				cl.Queue.queue.ShutDownWithDrain()
+			}
 		}
-	}()
+	}
+
+	wg := &sync.WaitGroup{}
+
+	wg.Add(cl.concurrency)
+	go func(wg *sync.WaitGroup) {
+		wg.Wait()
+		exitChannel <- struct{}{}
+	}(wg)
+
+	for range cl.concurrency {
+		go f(wg)
+	}
 
 	return exitChannel
 }

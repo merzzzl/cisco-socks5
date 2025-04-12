@@ -7,14 +7,16 @@ import (
 
 type Result struct {
 	RequeueAfter time.Duration
+	Requeue      bool
 }
 
 type ResourceObject interface {
 	GetConditions() []Condition
 	GetCondition(name string) (Condition, bool)
-	Finalizer() <-chan struct{}
-	DoneFinalizer()
 	SetKillTimestamp(time time.Time)
+	KillTimestamp() string
+	SetDeletionTimestamp(time.Time)
+	DeletionTimestamp() string
 }
 
 type Reconcile interface {

@@ -92,10 +92,14 @@ func layout(g *gocui.Gui, logs <-chan string, conditions <-chan []controlloop.Co
 					v.Clear()
 
 					for _, currentCondition := range c {
+						status := currentCondition.Status
+						if status == "True" {
+							status = log.Colorize(status, 46)
+						}
 						fmt.Fprintf(v, "%s %s %s %s \n",
 							log.Colorize(currentCondition.Type, 7),
 							log.Colorize(strings.ToUpper(currentCondition.Reason), 11),
-							currentCondition.Status,
+							status,
 							currentCondition.Message,
 						)
 					}

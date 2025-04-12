@@ -89,7 +89,7 @@ func (r *MainReconcile) reconcileNormal(ctx context.Context, mc *api.MainConfig)
 		return cl.Result{}, err
 	}
 	mc.MarkTrue(api.TunnelEnabledCondition)
-	return cl.Result{}, nil
+	return cl.Result{RequeueAfter: time.Second * 20}, nil
 }
 
 func (r *MainReconcile) reconcileKill(ctx context.Context, mc *api.MainConfig) (cl.Result, error) {
@@ -125,8 +125,7 @@ func (r *MainReconcile) reconcileKill(ctx context.Context, mc *api.MainConfig) (
 		log.Info().Msg("Main", "Reconcile Kill STOP VPN")
 	}
 
-	mc.DoneFinalizer()
 	log.Info().Msg("Main", "Reconcile Kill STOPPED")
 
-	return cl.Result{RequeueAfter: time.Second * 5}, nil
+	return cl.Result{}, nil
 }
