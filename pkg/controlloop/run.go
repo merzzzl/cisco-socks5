@@ -16,6 +16,7 @@ type ControlLoop struct {
 	r           Reconcile
 	object      ResourceObject
 	stopChannel chan struct{}
+	exitChannel chan struct{}
 	l           Logger
 	Queue       *Queue[ResourceObject]
 	concurrency int
@@ -31,6 +32,7 @@ func New(r Reconcile, options ...ClOption) *ControlLoop {
 	controlLoop := &ControlLoop{
 		r:           r,
 		stopChannel: make(chan struct{}),
+		exitChannel: make(chan struct{}),
 		Queue:       NewQueue(),
 	}
 
@@ -48,8 +50,7 @@ func New(r Reconcile, options ...ClOption) *ControlLoop {
 	return controlLoop
 }
 
-func (cl *ControlLoop) Run() <-chan struct{} {
-	exitChannel := make(chan struct{})
+func (cl *ControlLoop) Run() {
 	stopping := atomic.Bool{}
 	stopping.Store(false)
 
@@ -106,18 +107,17 @@ func (cl *ControlLoop) Run() <-chan struct{} {
 	wg.Add(cl.concurrency)
 	go func(wg *sync.WaitGroup) {
 		wg.Wait()
-		exitChannel <- struct{}{}
+		cl.exitChannel <- struct{}{}
 	}(wg)
 
 	for range cl.concurrency {
 		go f(wg)
 	}
-
-	return exitChannel
 }
 
 func (cl *ControlLoop) Stop() {
 	cl.stopChannel <- struct{}{}
+	<-cl.exitChannel
 }
 
 func (cl *ControlLoop) reconcile(ctx context.Context, r Reconcile, object ResourceObject) (Result, error) {

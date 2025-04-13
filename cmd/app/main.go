@@ -28,8 +28,6 @@ func main() {
 
 	l := &ui.LogWriter{Logs: make(chan string, 100)}
 	log.SetOutput(l)
-	log.Info().Msg("Main", "Starting warp-server...")
-
 	cfg, err := config.LoadConfig()
 	if err != nil {
 		panic(fmt.Errorf("Error loading config: %s ", err))
@@ -63,7 +61,7 @@ func main() {
 
 	mainLoop := cl.New(mainController, cl.WithLogger(log.NewLogger()))
 	mainLoop.Queue.AddResource(mc)
-	mainReconcileExit := mainLoop.Run()
+	mainLoop.Run()
 	log.Info().Msg("Main", "Start run main loop")
 
 	ctxExit, cancel := context.WithCancel(context.Background())
@@ -89,10 +87,10 @@ func main() {
 	}()
 	log.Info().Msg("Main", "Warp-server started!")
 	<-ctxExit.Done()
+
 	log.Info().Msg("Main", "Stopping warp-server...")
 	mainLoop.Stop()
-
-	<-mainReconcileExit
+	log.Info().Msg("Main", "warp-server stopped")
 	time.Sleep(time.Second * 2)
 	g.Close()
 
