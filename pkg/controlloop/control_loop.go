@@ -13,10 +13,14 @@ type Result struct {
 type ResourceObject interface {
 	GetConditions() []Condition
 	GetCondition(name string) (Condition, bool)
+	GetGeneration() int64
+	IncGeneration()
 	SetKillTimestamp(time time.Time)
-	KillTimestamp() string
+	GetKillTimestamp() string
 	SetDeletionTimestamp(time.Time)
-	DeletionTimestamp() string
+	GetDeletionTimestamp() string
+	GetName() ObjectKey
+	DeepCopy() ResourceObject
 }
 
 type Reconcile interface {

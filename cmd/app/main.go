@@ -33,7 +33,7 @@ func main() {
 		panic(fmt.Errorf("Error loading config: %s ", err))
 	}
 
-	newResource := cl.NewResource()
+	newResource := cl.NewResource("newResource")
 	mc := &api.MainConfig{
 		Resource: *newResource,
 		Spec:     api.MainConfigSpec{},

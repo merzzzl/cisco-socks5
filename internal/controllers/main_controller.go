@@ -44,7 +44,7 @@ func (r *MainReconcile) Reconcile(ctx context.Context, object cl.ResourceObject)
 		r.conditionsChan <- config.GetConditions()
 	}()
 
-	if config.KillTimestamp() != "" {
+	if config.GetKillTimestamp() != "" {
 		return r.reconcileKill(ctx, config)
 	}
 

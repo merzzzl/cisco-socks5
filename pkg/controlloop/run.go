@@ -2,6 +2,7 @@ package controlloop
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"k8s.io/client-go/util/workqueue"
 	"sync"
@@ -14,7 +15,6 @@ const errorReconcileTime = time.Second * 5
 
 type ControlLoop struct {
 	r           Reconcile
-	object      ResourceObject
 	stopChannel chan struct{}
 	exitChannel chan struct{}
 	l           Logger
@@ -78,8 +78,17 @@ func (cl *ControlLoop) Run() {
 				return
 			}
 
-			if stopping.Load() {
+			if stopping.Load() && object.GetKillTimestamp() == "" {
 				object.SetKillTimestamp(time.Now())
+				err := cl.Queue.Update(object)
+				if errors.Is(err, AlreadyUpdated) {
+					object = cl.Queue.GetResource(object)
+					if object == nil {
+						return
+					}
+					cl.Queue.Update(object)
+				}
+				return
 			}
 
 			result, err := cl.reconcile(ctx, r, object)
