@@ -6,6 +6,7 @@ import (
 	"github.com/jroimartin/gocui"
 	"os"
 	"os/signal"
+	"os/user"
 	"path/filepath"
 	"syscall"
 	"time"
@@ -25,6 +26,14 @@ import (
 )
 
 func main() {
+
+	currentUser, err := user.Current()
+	if err != nil {
+		panic(fmt.Sprintf("Cannot get current user: %v", err))
+	}
+	if currentUser.Gid == "0" || currentUser.Uid == "0" {
+		panic(fmt.Sprintf("Don't run from root"))
+	}
 
 	l := &ui.LogWriter{Logs: make(chan string, 100)}
 	log.SetOutput(l)
