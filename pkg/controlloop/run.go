@@ -13,29 +13,29 @@ import (
 const defaultReconcileTime = time.Second * 30
 const errorReconcileTime = time.Second * 5
 
-type ControlLoop struct {
-	r           Reconcile
+type ControlLoop[T ResourceObject[T]] struct {
+	r           Reconcile[T]
 	stopChannel chan struct{}
 	exitChannel chan struct{}
 	l           Logger
 	concurrency int
-	Storage     Storage
-	Queue       *Queue[ResourceObject]
+	Storage     Storage[T]
+	Queue       *Queue[T]
 }
 
-func New(r Reconcile, options ...ClOption) *ControlLoop {
+func New[T ResourceObject[T]](r Reconcile[T], options ...ClOption) *ControlLoop[T] {
 	currentOptions := &opts{}
 	for _, o := range options {
 		o(currentOptions)
 	}
-	typedRateLimitingQueueConfig := workqueue.TypedRateLimitingQueueConfig[ResourceObject]{}
-	typedRateLimitingQueueConfig.DelayingQueue = workqueue.NewTypedDelayingQueue[ResourceObject]()
-	queue := NewQueue()
-	controlLoop := &ControlLoop{
+	typedRateLimitingQueueConfig := workqueue.TypedRateLimitingQueueConfig[ObjectKey]{}
+	typedRateLimitingQueueConfig.DelayingQueue = workqueue.NewTypedDelayingQueue[ObjectKey]()
+	queue := NewQueue[T]()
+	controlLoop := &ControlLoop[T]{
 		r:           r,
 		stopChannel: make(chan struct{}),
 		exitChannel: make(chan struct{}),
-		Storage:     NewMemoryStorage(queue),
+		Storage:     NewMemoryStorage[T](queue),
 		Queue:       queue,
 	}
 
@@ -53,7 +53,7 @@ func New(r Reconcile, options ...ClOption) *ControlLoop {
 	return controlLoop
 }
 
-func (cl *ControlLoop) Run() {
+func (cl *ControlLoop[T]) Run() {
 	stopping := atomic.Bool{}
 	stopping.Store(false)
 
@@ -130,12 +130,12 @@ func (cl *ControlLoop) Run() {
 	}
 }
 
-func (cl *ControlLoop) Stop() {
+func (cl *ControlLoop[T]) Stop() {
 	cl.stopChannel <- struct{}{}
 	<-cl.exitChannel
 }
 
-func (cl *ControlLoop) reconcile(ctx context.Context, r Reconcile, object ResourceObject) (Result, error) {
+func (cl *ControlLoop[T]) reconcile(ctx context.Context, r Reconcile[T], object T) (Result, error) {
 	defer func() {
 		if r := recover(); r != nil {
 			cl.l.Error(fmt.Errorf("Recovered from panic: %v ", r))

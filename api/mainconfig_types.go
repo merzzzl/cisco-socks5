@@ -29,6 +29,6 @@ type MainConfig struct {
 type MainConfigSpec struct{}
 
 // todo generate
-func (c *MainConfig) DeepCopy() cl.ResourceObject {
+func (c *MainConfig) DeepCopy() *MainConfig {
 	return cl.DeepCopyStruct(c).(*MainConfig)
 }

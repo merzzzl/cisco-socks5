@@ -4,46 +4,47 @@ import (
 	"sync"
 )
 
-type Storage interface {
-	Add(item ResourceObject)
-	Get(item ResourceObject) ResourceObject
-	Update(item ResourceObject) error
-	Delete(item ResourceObject)
-	getLast() (ResourceObject, bool, error)
+type Storage[T ResourceObject[T]] interface {
+	Add(item T)
+	Get(item T) T
+	Update(item T) error
+	Delete(item T)
+	getLast() (T, bool, error)
 }
 
-func NewMemoryStorage(q *Queue[ResourceObject]) *MemoryStorage {
-	return &MemoryStorage{
+func NewMemoryStorage[T ResourceObject[T]](q *Queue[T]) *MemoryStorage[T] {
+	return &MemoryStorage[T]{
 		m:       &sync.RWMutex{},
 		Queue:   q,
-		objects: make(map[ObjectKey]ResourceObject),
+		objects: make(map[ObjectKey]T),
 	}
 }
 
-type MemoryStorage struct {
+type MemoryStorage[T ResourceObject[T]] struct {
 	m       *sync.RWMutex
-	Queue   *Queue[ResourceObject]
-	objects map[ObjectKey]ResourceObject
+	Queue   *Queue[T]
+	objects map[ObjectKey]T
 }
 
-func (s *MemoryStorage) Add(item ResourceObject) {
+func (s *MemoryStorage[T]) Add(item T) {
 	s.m.Lock()
 	defer s.m.Unlock()
 	s.objects[item.GetName()] = item
 	s.Queue.add(item)
 }
 
-func (s *MemoryStorage) Get(item ResourceObject) ResourceObject {
+func (s *MemoryStorage[T]) Get(item T) T {
 	s.m.RLock()
 	defer s.m.RUnlock()
+	var zero T
 	val, exist := s.objects[item.GetName()]
 	if !exist {
-		return nil
+		return zero
 	}
 	return val.DeepCopy()
 }
 
-func (s *MemoryStorage) Update(item ResourceObject) error {
+func (s *MemoryStorage[T]) Update(item T) error {
 	s.m.Lock()
 	defer s.m.Unlock()
 	curr, exist := s.objects[item.GetName()]
@@ -60,23 +61,24 @@ func (s *MemoryStorage) Update(item ResourceObject) error {
 	return nil
 }
 
-func (s *MemoryStorage) Delete(item ResourceObject) {
+func (s *MemoryStorage[T]) Delete(item T) {
 	s.m.Lock()
 	defer s.m.Unlock()
 	s.Queue.finalize(item)
 	delete(s.objects, item.GetName())
 }
 
-func (s *MemoryStorage) getLast() (ResourceObject, bool, error) {
+func (s *MemoryStorage[T]) getLast() (T, bool, error) {
 	s.m.Lock()
 	defer s.m.Unlock()
+	var zero T
 	name, shutdown := s.Queue.get()
 	if shutdown {
-		return nil, true, nil
+		return zero, true, nil
 	}
 	// object already deleted
 	if _, exist := s.objects[name]; !exist {
-		return nil, false, KetNotExist
+		return zero, false, KetNotExist
 	}
 	return s.objects[name].DeepCopy(), false, nil
 }
