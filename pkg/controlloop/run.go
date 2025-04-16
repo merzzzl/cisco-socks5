@@ -18,8 +18,9 @@ type ControlLoop struct {
 	stopChannel chan struct{}
 	exitChannel chan struct{}
 	l           Logger
-	Queue       *Queue[ResourceObject]
 	concurrency int
+	Storage     Storage
+	Queue       *Queue[ResourceObject]
 }
 
 func New(r Reconcile, options ...ClOption) *ControlLoop {
@@ -29,11 +30,13 @@ func New(r Reconcile, options ...ClOption) *ControlLoop {
 	}
 	typedRateLimitingQueueConfig := workqueue.TypedRateLimitingQueueConfig[ResourceObject]{}
 	typedRateLimitingQueueConfig.DelayingQueue = workqueue.NewTypedDelayingQueue[ResourceObject]()
+	queue := NewQueue()
 	controlLoop := &ControlLoop{
 		r:           r,
 		stopChannel: make(chan struct{}),
 		exitChannel: make(chan struct{}),
-		Queue:       NewQueue(),
+		Storage:     NewMemoryStorage(queue),
+		Queue:       queue,
 	}
 
 	if currentOptions.logger != nil {
@@ -73,22 +76,25 @@ func (cl *ControlLoop) Run() {
 		r := cl.r
 		ctx := context.Background()
 		for {
-			object, exit := cl.Queue.get()
+
+			object, exit, err := cl.Storage.getLast()
 			if exit {
 				return
+			}
+			if err != nil {
+				// object already deleted
+				if errors.Is(err, KetNotExist) {
+					continue
+				}
 			}
 
 			if stopping.Load() && object.GetKillTimestamp() == "" {
 				object.SetKillTimestamp(time.Now())
-				err := cl.Queue.Update(object)
+				err := cl.Storage.Update(object)
 				if errors.Is(err, AlreadyUpdated) {
-					object = cl.Queue.GetResource(object)
-					if object == nil {
-						return
-					}
-					cl.Queue.Update(object)
+					cl.Queue.queue.Add(object.GetName())
 				}
-				return
+				continue
 			}
 
 			result, err := cl.reconcile(ctx, r, object)

@@ -60,7 +60,7 @@ func main() {
 	)
 
 	mainLoop := cl.New(mainController, cl.WithLogger(log.NewLogger()))
-	mainLoop.Queue.AddResource(mc)
+	mainLoop.Storage.Add(mc)
 	mainLoop.Run()
 	log.Info().Msg("Main", "Start run main loop")
 
