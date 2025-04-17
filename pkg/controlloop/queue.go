@@ -57,8 +57,6 @@ func (q *Queue[T]) addRateLimited(item ResourceObject[T]) {
 }
 
 func (q *Queue[t]) get() (ObjectKey, bool) {
-	q.m.Lock()
-	defer q.m.Unlock()
 	name, shutdown := q.queue.Get()
 	if shutdown {
 		return "", true
