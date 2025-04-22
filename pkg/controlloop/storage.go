@@ -49,7 +49,7 @@ func (s *MemoryStorage[T]) Update(item T) error {
 	defer s.m.Unlock()
 	curr, exist := s.objects[item.GetName()]
 	if !exist {
-		return KetNotExist
+		return KeyNotExist
 	}
 	if curr.GetGeneration() > item.GetGeneration() {
 		return AlreadyUpdated
@@ -78,7 +78,7 @@ func (s *MemoryStorage[T]) getLast() (T, bool, error) {
 	}
 	// object already deleted
 	if _, exist := s.objects[name]; !exist {
-		return zero, false, KetNotExist
+		return zero, false, KeyNotExist
 	}
 	return s.objects[name].DeepCopy(), false, nil
 }

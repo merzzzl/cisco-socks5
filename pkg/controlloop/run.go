@@ -83,7 +83,7 @@ func (cl *ControlLoop[T]) Run() {
 			}
 			if err != nil {
 				// object already deleted
-				if errors.Is(err, KetNotExist) {
+				if errors.Is(err, KeyNotExist) {
 					continue
 				}
 			}
