@@ -107,7 +107,11 @@ func (cl *ControlLoop[T]) Run() {
 			case result.Requeue:
 				cl.Queue.add(object)
 			default:
-				cl.Queue.finalize(object)
+				if object.GetDeletionTimestamp() != "" {
+					cl.Storage.Delete(object)
+				} else {
+					cl.Queue.finalize(object)
+				}
 			}
 
 			cl.Queue.done(object)
