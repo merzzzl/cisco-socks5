@@ -20,10 +20,11 @@ type ControlLoop[T ResourceObject[T]] struct {
 	l           Logger
 	concurrency int
 	Storage     Storage[T]
+	storages    *Storages
 	Queue       *Queue[T]
 }
 
-func New[T ResourceObject[T]](r Reconcile[T], options ...ClOption) *ControlLoop[T] {
+func New[T ResourceObject[T]](r Reconcile[T], options ...ClOption) (*ControlLoop[T], Storage[T]) {
 	currentOptions := &opts{}
 	for _, o := range options {
 		o(currentOptions)
@@ -50,7 +51,12 @@ func New[T ResourceObject[T]](r Reconcile[T], options ...ClOption) *ControlLoop[
 	} else {
 		controlLoop.concurrency = 1
 	}
-	return controlLoop
+
+	if currentOptions.storages != nil {
+		controlLoop.storages = currentOptions.storages
+	}
+
+	return controlLoop, controlLoop.Storage
 }
 
 func (cl *ControlLoop[T]) Run() {

@@ -1,12 +1,43 @@
 package controlloop
 
 import (
+	"reflect"
 	"sync"
+	"warp-server/pkg/assertions"
 )
+
+type Storages struct {
+	mu    sync.RWMutex
+	store map[reflect.Type]interface{}
+}
+
+func NewStorages() *Storages {
+	return &Storages{
+		store: make(map[reflect.Type]interface{}),
+	}
+}
+
+func GetStorage[T ResourceObject[T]](storages *Storages) (T, bool) {
+	storages.mu.RLock()
+	defer storages.mu.RUnlock()
+	var zero T
+	raw, ok := storages.store[assertions.TypeOf[T]()]
+	if !ok {
+		return zero, false
+	}
+	return assertions.As[T](raw)
+}
+
+func SetStorage[T ResourceObject[T]](storages *Storages, store Storage[T]) {
+	storages.mu.Lock()
+	defer storages.mu.Unlock()
+	storages.store[assertions.TypeOf[T]()] = store
+}
 
 type Storage[T ResourceObject[T]] interface {
 	Add(item T)
 	Get(item T) T
+	List(key ObjectKey) []T
 	Update(item T) error
 	Delete(item T)
 	getLast() (T, bool, error)
@@ -42,6 +73,16 @@ func (s *MemoryStorage[T]) Get(item T) T {
 		return zero
 	}
 	return val.DeepCopy()
+}
+
+func (s *MemoryStorage[T]) List(key ObjectKey) []T {
+	s.m.RLock()
+	defer s.m.RUnlock()
+	res := make([]T, len(s.objects))
+	for _, v := range s.objects {
+		res = append(res, v.DeepCopy())
+	}
+	return res
 }
 
 func (s *MemoryStorage[T]) Update(item T) error {

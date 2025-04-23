@@ -9,7 +9,7 @@ func DeepCopyStruct(src interface{}) interface{} {
 	if srcVal.Kind() != reflect.Ptr || srcVal.Elem().Kind() != reflect.Struct {
 		panic("DeepCopyStructPtr: input must be a pointer to a struct")
 	}
-	// Вызов deepCopyValue для обработки указателя (case reflect.Ptr вернёт новый указатель)
+	// Вызов deepCopyValue для обработки указателя (case assertions.Ptr вернёт новый указатель)
 	return deepCopyValue(srcVal).Interface()
 }
 
