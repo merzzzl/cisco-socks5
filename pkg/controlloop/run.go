@@ -20,7 +20,7 @@ type ControlLoop[T ResourceObject[T]] struct {
 	l           Logger
 	concurrency int
 	Storage     Storage[T]
-	storages    *Storages
+	storages    *StorageSet
 	Queue       *Queue[T]
 }
 

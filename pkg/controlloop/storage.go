@@ -6,18 +6,18 @@ import (
 	"warp-server/pkg/assertions"
 )
 
-type Storages struct {
+type StorageSet struct {
 	mu    sync.RWMutex
 	store map[reflect.Type]interface{}
 }
 
-func NewStorages() *Storages {
-	return &Storages{
+func NewStorageSet() *StorageSet {
+	return &StorageSet{
 		store: make(map[reflect.Type]interface{}),
 	}
 }
 
-func GetStorage[T ResourceObject[T]](storages *Storages) (T, bool) {
+func GetStorage[T ResourceObject[T]](storages *StorageSet) (T, bool) {
 	storages.mu.RLock()
 	defer storages.mu.RUnlock()
 	var zero T
@@ -28,7 +28,7 @@ func GetStorage[T ResourceObject[T]](storages *Storages) (T, bool) {
 	return assertions.As[T](raw)
 }
 
-func SetStorage[T ResourceObject[T]](storages *Storages, store Storage[T]) {
+func SetStorage[T ResourceObject[T]](storages *StorageSet, store Storage[T]) {
 	storages.mu.Lock()
 	defer storages.mu.Unlock()
 	storages.store[assertions.TypeOf[T]()] = store

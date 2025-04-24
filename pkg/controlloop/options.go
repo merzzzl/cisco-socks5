@@ -3,7 +3,7 @@ package controlloop
 type opts struct {
 	logger      Logger
 	concurrency int
-	storages    *Storages
+	storages    *StorageSet
 }
 
 type ClOption func(*opts)
@@ -20,7 +20,7 @@ func WithConcurrentReconciles(count int) ClOption {
 	}
 }
 
-func WithStorages(sr *Storages) ClOption {
+func WithStorageSet(sr *StorageSet) ClOption {
 	return func(o *opts) {
 		o.storages = sr
 	}
