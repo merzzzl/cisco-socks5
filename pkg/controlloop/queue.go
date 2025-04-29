@@ -15,7 +15,7 @@ type Queue[T ResourceObject[T]] struct {
 func NewQueue[T ResourceObject[T]]() *Queue[T] {
 	rateLimitingConfig := workqueue.TypedRateLimitingQueueConfig[ObjectKey]{}
 	rateLimitingConfig.DelayingQueue = workqueue.NewTypedDelayingQueue[ObjectKey]()
-	queue := workqueue.NewTypedRateLimitingQueueWithConfig[ObjectKey](workqueue.NewTypedMaxOfRateLimiter[ObjectKey](), rateLimitingConfig)
+	queue := workqueue.NewTypedRateLimitingQueueWithConfig[ObjectKey](workqueue.DefaultTypedControllerRateLimiter[ObjectKey](), rateLimitingConfig)
 	return &Queue[T]{queue: queue, existedItems: make(map[ObjectKey]ResourceObject[T]), m: &sync.RWMutex{}}
 }
 
