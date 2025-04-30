@@ -37,7 +37,7 @@ func SetStorage[T ResourceObject[T]](storages *StorageSet, store Storage[T]) {
 type Storage[T ResourceObject[T]] interface {
 	Add(item T)
 	Get(item T) T
-	List(key ObjectKey) []T
+	List() map[ObjectKey]T
 	Update(item T) error
 	Delete(item T)
 	getLast() (T, bool, error)
@@ -75,12 +75,12 @@ func (s *MemoryStorage[T]) Get(item T) T {
 	return val.DeepCopy()
 }
 
-func (s *MemoryStorage[T]) List(key ObjectKey) []T {
+func (s *MemoryStorage[T]) List() map[ObjectKey]T {
 	s.m.RLock()
 	defer s.m.RUnlock()
-	res := make([]T, len(s.objects))
-	for _, v := range s.objects {
-		res = append(res, v.DeepCopy())
+	res := make(map[ObjectKey]T, len(s.objects))
+	for key, v := range s.objects {
+		res[key] = v.DeepCopy()
 	}
 	return res
 }
