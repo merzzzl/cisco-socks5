@@ -146,7 +146,7 @@ func (r *Repository) CheckHealthTCP() (bool, error) {
 		return false, fmt.Errorf("создание SOCKS5 dialer: %w", err)
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
 	conn, err := dialer.(proxy.ContextDialer).DialContext(ctx, "tcp", "8.8.8.8:53")
