@@ -27,7 +27,7 @@ jobs:
       - name: Install dependencies
         run: go mod tidy
       - name: Build application
-        run: go build -o warp-${{ matrix.goos }}-${{ matrix.goarch }} ./cmd/.
+        run: go build -o warp-${{ matrix.goos }}-${{ matrix.goarch }} ./cmd/app/.
       - name: Upload binary as artifact
         uses: actions/upload-artifact@v4
         with:
