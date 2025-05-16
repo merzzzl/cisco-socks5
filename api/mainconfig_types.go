@@ -7,7 +7,6 @@ import (
 const (
 	VPNConnectedCondition     = "VPNConnected"
 	PFDisabledCondition       = "PFDisabled"
-	SSHKeysInstalledCondition = "SSHKeysInstalled"
 	TunnelEnabledCondition    = "TunnelEnabled"
 
 	VPNReasonReady                   = "VPNDisconnected"
@@ -16,7 +15,6 @@ const (
 	VPNDisconnectFailedReason        = "VPNDisconnectFailed"
 	VPNConnectionStopFiled           = "VPNStopFailed"
 	PFDisabledFailedReason           = "PFDisabledFailed"
-	SSHKeysFailedReason              = "SSHKeysFailed"
 	TunnelInitializationFailedReason = "TunnelInitializationFailed"
 	TunnelDisablingFailedReason      = "TunnelDisablingFailed"
 )

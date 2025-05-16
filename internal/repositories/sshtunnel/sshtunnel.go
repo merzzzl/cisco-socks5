@@ -2,33 +2,22 @@ package sshtunnel
 
 import (
 	"bufio"
-	"context"
 	"errors"
 	"fmt"
-	"golang.org/x/net/proxy"
-	"net/http"
-	"net/url"
 	"os/exec"
 	"strconv"
 	"strings"
 	"syscall"
-	"time"
 )
 
 // Repository — конкретная реализация репозитория
 type Repository struct {
 	localUsername string
-	localHost     string
-	tunnelAddress string
 }
 
-func NewRepository(localUsername, localHost, tunnelAddress string) *Repository {
-	// Конкретные параметры команды:
-	//  ssh -D 192.168.64.8:8080 -N nikolai@127.0.0.1
+func NewRepository(localUsername string) *Repository {
 	return &Repository{
 		localUsername: localUsername,
-		localHost:     localHost,
-		tunnelAddress: tunnelAddress,
 	}
 }
 
@@ -36,8 +25,8 @@ func NewRepository(localUsername, localHost, tunnelAddress string) *Repository {
 // Возвращает этот PID, либо ошибку.
 func (r *Repository) StartTunnel(privateKeyPath string) (int, error) {
 
-	localhost := fmt.Sprintf("%s@%s", r.localUsername, r.localHost)
-	cmd := exec.Command("ssh", "-o", "StrictHostKeyChecking=no", "-i", privateKeyPath, "-D", r.tunnelAddress, "-N", localhost)
+	localhost := fmt.Sprintf("%s@127.0.0.1", r.localUsername)
+	cmd := exec.Command("ssh", "-o", "StrictHostKeyChecking=no", "-i", privateKeyPath, "-D", "127.0.0.1:8080", "-N", localhost)
 
 	// Запускаем в фоне
 	if err := cmd.Start(); err != nil {
@@ -82,8 +71,8 @@ func (r *Repository) GetPID() (int, bool, error) {
 	}
 
 	scanner := bufio.NewScanner(strings.NewReader(string(out)))
-	localhost := fmt.Sprintf("%s@%s", r.localUsername, r.localHost)
-	args := []string{"-D", r.tunnelAddress, "-N", localhost}
+	localhost := fmt.Sprintf("%s@127.0.01", r.localUsername)
+	args := []string{"-D", "127.0.0.1:8080", "-N", localhost}
 	searchLine := strings.Join(args, " ") // "-D 192.168.64.8:8080 -N nikolai@127.0.0.1"
 	// Важно: первая часть "ssh" в ps может отображаться иначе (полный путь /usr/bin/ssh).
 	// Можно проверять подстроку без "ssh", а только "-D 192.168.64.8:8080 -N ..."
@@ -115,44 +104,4 @@ func (r *Repository) StopTunnel(pid int) error {
 		return fmt.Errorf("не удалось остановить процесс %d: %w", pid, err)
 	}
 	return nil
-}
-
-func (r *Repository) CheckHealth() (bool, error) {
-	proxyURL, err := url.Parse(fmt.Sprintf("socks5://%s", r.tunnelAddress))
-	if err != nil {
-		return false, err
-	}
-
-	client := &http.Client{
-		Timeout: 3 * time.Second,
-		Transport: &http.Transport{
-			Proxy: http.ProxyURL(proxyURL),
-		},
-	}
-
-	resp, err := client.Get("https://ya.ru")
-	if err != nil {
-		return false, fmt.Errorf("запрос через туннель не удался: %w", err)
-	}
-	defer resp.Body.Close()
-
-	return resp.StatusCode == 200, nil
-}
-
-func (r *Repository) CheckHealthTCP() (bool, error) {
-	// Создаём SOCKS5-прокси-дилер
-	dialer, err := proxy.SOCKS5("tcp", r.tunnelAddress, nil, proxy.Direct)
-	if err != nil {
-		return false, fmt.Errorf("создание SOCKS5 dialer: %w", err)
-	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	conn, err := dialer.(proxy.ContextDialer).DialContext(ctx, "tcp", "8.8.8.8:53")
-	if err != nil {
-		return false, nil
-	}
-	conn.Close()
-	return true, nil
 }

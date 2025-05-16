@@ -4,8 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/jroimartin/gocui"
 	"strings"
+
+	"github.com/jroimartin/gocui"
+
 	"cisco-socks5/pkg/controlloop"
 	"cisco-socks5/pkg/log"
 )
@@ -49,7 +51,7 @@ func CreateTUI(cancel context.CancelFunc, g *gocui.Gui, l *LogWriter, conditions
 
 func layout(g *gocui.Gui, logs <-chan string, conditions <-chan []controlloop.Condition) error {
 	maxX, maxY := g.Size()
-	if v, err := g.SetView("Logs", 0, maxY-15, maxX-21, maxY-1); err != nil {
+	if v, err := g.SetView("Logs", 0, maxY-15, maxX-1, maxY-1); err != nil {
 		if !errors.Is(err, gocui.ErrUnknownView) {
 			return err
 		}
@@ -79,7 +81,7 @@ func layout(g *gocui.Gui, logs <-chan string, conditions <-chan []controlloop.Co
 	}
 
 	// 0, maxY-15, maxX-21, maxY-1
-	if v, err := g.SetView("conditions", 0, 0, maxX-21, maxY-16); err != nil {
+	if v, err := g.SetView("conditions", 0, 0, maxX-1, maxY-16); err != nil {
 		if !errors.Is(err, gocui.ErrUnknownView) {
 			return err
 		}

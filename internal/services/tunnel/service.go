@@ -12,14 +12,11 @@ type SSHTunnelRepository interface {
 	IsRunning(pid int) (bool, error)
 	GetPID() (int, bool, error)
 	StopTunnel(pid int) error
-	CheckHealth() (bool, error)
-	CheckHealthTCP() (bool, error)
 }
 
 type Service struct {
 	publicKeyPath       string
 	privateKeyPath      string
-	sshKeysRepository   SSHKeysRepository
 	sshTunnelRepository SSHTunnelRepository
 
 	keyInstalled bool
@@ -28,13 +25,11 @@ type Service struct {
 func NewService(
 	publicKeyPath string,
 	privateKeyPath string,
-	sshKeysRepository SSHKeysRepository,
 	sshTunnelRepository SSHTunnelRepository,
 ) *Service {
 	return &Service{
 		publicKeyPath:       publicKeyPath,
 		privateKeyPath:      privateKeyPath,
-		sshKeysRepository:   sshKeysRepository,
 		sshTunnelRepository: sshTunnelRepository,
 	}
 }

@@ -1,20 +1,18 @@
 package config
 
 import (
+	"os"
+
 	"github.com/go-playground/validator/v10"
 	_ "github.com/go-playground/validator/v10"
 	yaml "gopkg.in/yaml.v2"
-	"os"
 )
 
 type Config struct {
-	CiscoHost     string `validate:"required" yaml:"cisco_host"`
+	CiscoProfile  string `validate:"required" yaml:"cisco_profile"`
 	CiscoUsername string `validate:"required" yaml:"cisco_username"`
 	CiscoPassword string `validate:"required" yaml:"cisco_password"`
-	LocalUsername string `validate:"required" yaml:"local_username"`
 	LocalPassword string `validate:"required" yaml:"local_password"`
-	LocalHost     string `validate:"required" yaml:"localhost"`
-	TunnelAddress string `validate:"required" yaml:"tunnel_address"`
 }
 
 func LoadConfig() (*Config, error) {

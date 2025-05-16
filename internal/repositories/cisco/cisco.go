@@ -13,13 +13,13 @@ const (
 )
 
 type Repository struct {
-	ciscoHost     string
+	ciscoProfile     string
 	ciscoUsername string
 	ciscoPassword string
 }
 
-func NewRepository(ciscoHost, ciscoUsername, ciscoPassword string) *Repository {
-	return &Repository{ciscoHost, ciscoUsername, ciscoPassword}
+func NewRepository(ciscoProfile, ciscoUsername, ciscoPassword string) *Repository {
+	return &Repository{ciscoProfile, ciscoUsername, ciscoPassword}
 }
 
 func (r *Repository) Connect() error {
@@ -29,7 +29,7 @@ func (r *Repository) Connect() error {
 		VPNPath,
 		"-s",
 		"connect",
-		r.ciscoHost,
+		r.ciscoProfile,
 	)
 	cmd.Stdout = &outBuf
 	cmd.Stderr = &outBuf

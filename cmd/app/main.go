@@ -1,21 +1,11 @@
 package main
 
 import (
-	"context"
-	"fmt"
-	"github.com/jroimartin/gocui"
-	"os"
-	"os/signal"
-	"os/user"
-	"path/filepath"
-	"syscall"
-	"time"
 	"cisco-socks5/api"
 	"cisco-socks5/internal/config"
 	"cisco-socks5/internal/controllers"
 	repoVPN "cisco-socks5/internal/repositories/cisco"
 	"cisco-socks5/internal/repositories/packetfilter"
-	"cisco-socks5/internal/repositories/sshkeys"
 	"cisco-socks5/internal/repositories/sshtunnel"
 	"cisco-socks5/internal/services/fw"
 	"cisco-socks5/internal/services/tunnel"
@@ -23,6 +13,16 @@ import (
 	"cisco-socks5/internal/ui"
 	cl "cisco-socks5/pkg/controlloop"
 	"cisco-socks5/pkg/log"
+	"context"
+	"fmt"
+	"os"
+	"os/signal"
+	"os/user"
+	"path/filepath"
+	"syscall"
+	"time"
+
+	"github.com/jroimartin/gocui"
 )
 
 func main() {
@@ -50,14 +50,13 @@ func main() {
 
 	homeDir, _ := os.UserHomeDir()
 	sshDir := filepath.Join(homeDir, ".ssh")
-	privateKeyPath := filepath.Join(sshDir, "id_rsa_warp")
-	publicKeyPath := filepath.Join(sshDir, "id_rsa_warp.pub")
-	sshKeysRepo := sshkeys.NewRepository(cfg.LocalUsername, cfg.LocalHost, sshDir)
-	sshTunnelRepo := sshtunnel.NewRepository(cfg.LocalUsername, cfg.LocalHost, cfg.TunnelAddress)
+	privateKeyPath := filepath.Join(sshDir, "id_rsa_cisco")
+	publicKeyPath := filepath.Join(sshDir, "id_rsa_cisco.pub")
+	sshTunnelRepo := sshtunnel.NewRepository(currentUser.Username)
 
-	vpnService := vpn.NewService(repoVPN.NewRepository(cfg.CiscoHost, cfg.CiscoUsername, cfg.CiscoPassword))
+	vpnService := vpn.NewService(repoVPN.NewRepository(cfg.CiscoProfile, cfg.CiscoUsername, cfg.CiscoPassword))
 	fwService := fw.NewService(packetfilter.NewRepository(cfg.LocalPassword))
-	tunnelService := tunnel.NewService(publicKeyPath, privateKeyPath, sshKeysRepo, sshTunnelRepo)
+	tunnelService := tunnel.NewService(publicKeyPath, privateKeyPath, sshTunnelRepo)
 
 	conditionChannel := make(chan []cl.Condition, 100)
 
@@ -68,7 +67,7 @@ func main() {
 		tunnelService,
 	)
 
-	mainLoop, _ := cl.New[*api.MainConfig](mainController, cl.WithLogger(log.NewLogger()))
+	mainLoop, _ := cl.New(mainController, cl.WithLogger(log.NewLogger()))
 	mainLoop.Storage.Add(mc)
 	mainLoop.Run()
 	log.Info().Msg("Main", "Start run main loop")
