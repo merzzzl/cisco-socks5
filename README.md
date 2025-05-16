@@ -1,8 +1,3 @@
-## Install warp-server
-```ssh
-brew install dhnikolas/tools/warp-server
-```
-
 ### Configuration
 #### Create file ~/.warp-server.yaml
 ```yaml
