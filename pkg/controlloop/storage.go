@@ -3,7 +3,7 @@ package controlloop
 import (
 	"reflect"
 	"sync"
-	"warp-server/pkg/assertions"
+	"cisco-socks5/pkg/assertions"
 )
 
 type StorageSet struct {

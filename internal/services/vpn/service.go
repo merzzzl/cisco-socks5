@@ -1,6 +1,6 @@
 package vpn
 
-import "warp-server/internal/dto"
+import "cisco-socks5/internal/dto"
 
 type RepositoryVPN interface {
 	Connect() error

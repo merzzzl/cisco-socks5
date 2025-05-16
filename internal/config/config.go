@@ -19,7 +19,7 @@ type Config struct {
 
 func LoadConfig() (*Config, error) {
 	homedir, _ := os.UserHomeDir()
-	file, err := os.ReadFile(homedir + "/" + ".warp-server.yaml")
+	file, err := os.ReadFile(homedir + "/" + ".cisco-socks5.yaml")
 	if err != nil {
 		return nil, err
 	}

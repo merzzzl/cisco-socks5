@@ -1,7 +1,7 @@
 package api
 
 import (
-	cl "warp-server/pkg/controlloop"
+	cl "cisco-socks5/pkg/controlloop"
 )
 
 const (

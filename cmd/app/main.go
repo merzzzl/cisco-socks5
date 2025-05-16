@@ -10,19 +10,19 @@ import (
 	"path/filepath"
 	"syscall"
 	"time"
-	"warp-server/api"
-	"warp-server/internal/config"
-	"warp-server/internal/controllers"
-	repoVPN "warp-server/internal/repositories/cisco"
-	"warp-server/internal/repositories/packetfilter"
-	"warp-server/internal/repositories/sshkeys"
-	"warp-server/internal/repositories/sshtunnel"
-	"warp-server/internal/services/fw"
-	"warp-server/internal/services/tunnel"
-	"warp-server/internal/services/vpn"
-	"warp-server/internal/ui"
-	cl "warp-server/pkg/controlloop"
-	"warp-server/pkg/log"
+	"cisco-socks5/api"
+	"cisco-socks5/internal/config"
+	"cisco-socks5/internal/controllers"
+	repoVPN "cisco-socks5/internal/repositories/cisco"
+	"cisco-socks5/internal/repositories/packetfilter"
+	"cisco-socks5/internal/repositories/sshkeys"
+	"cisco-socks5/internal/repositories/sshtunnel"
+	"cisco-socks5/internal/services/fw"
+	"cisco-socks5/internal/services/tunnel"
+	"cisco-socks5/internal/services/vpn"
+	"cisco-socks5/internal/ui"
+	cl "cisco-socks5/pkg/controlloop"
+	"cisco-socks5/pkg/log"
 )
 
 func main() {
@@ -94,12 +94,12 @@ func main() {
 		signal.Notify(sig, syscall.SIGINT, syscall.SIGTERM)
 		<-sig
 	}()
-	log.Info().Msg("Main", "Warp-server started!")
+	log.Info().Msg("Main", "cisco-socks5 started!")
 	<-ctxExit.Done()
 
-	log.Info().Msg("Main", "Stopping warp-server...")
+	log.Info().Msg("Main", "Stopping cisco-socks5...")
 	mainLoop.Stop()
-	log.Info().Msg("Main", "warp-server stopped")
+	log.Info().Msg("Main", "cisco-socks5 stopped")
 	time.Sleep(time.Second * 2)
 	g.Close()
 

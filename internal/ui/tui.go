@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"github.com/jroimartin/gocui"
 	"strings"
-	"warp-server/pkg/controlloop"
-	"warp-server/pkg/log"
+	"cisco-socks5/pkg/controlloop"
+	"cisco-socks5/pkg/log"
 )
 
 type LogWriter struct {

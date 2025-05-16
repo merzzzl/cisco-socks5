@@ -1,4 +1,4 @@
 .idea
 vpn.sh
 vendor/
-warp-server
+cisco-socks5

@@ -1,4 +1,4 @@
-module warp-server
+module cisco-socks5
 
 go 1.24.2
 

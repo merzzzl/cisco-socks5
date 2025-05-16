@@ -3,13 +3,13 @@ package controllers
 import (
 	"context"
 	"time"
-	"warp-server/api"
-	"warp-server/internal/dto"
-	"warp-server/internal/services/fw"
-	"warp-server/internal/services/tunnel"
-	"warp-server/internal/services/vpn"
-	cl "warp-server/pkg/controlloop"
-	"warp-server/pkg/log"
+	"cisco-socks5/api"
+	"cisco-socks5/internal/dto"
+	"cisco-socks5/internal/services/fw"
+	"cisco-socks5/internal/services/tunnel"
+	"cisco-socks5/internal/services/vpn"
+	cl "cisco-socks5/pkg/controlloop"
+	"cisco-socks5/pkg/log"
 )
 
 func NewMainReconcile(

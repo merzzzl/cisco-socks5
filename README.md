@@ -1,5 +1,5 @@
 ### Configuration
-#### Create file ~/.warp-server.yaml
+#### Create file ~/.cisco-socks5.yaml
 ```yaml
 cisco_host: 'profile_name' #Vpn profile name
 cisco_username: 'john.doe'

@@ -13,7 +13,7 @@ jobs:
       - name: Set output
         id: vars
         run: |
-          PROJECT_NAME=warp-server
+          PROJECT_NAME=cisco-socks5
           PROJECT_DESCRIPTION="Tool for quick clone layouts repo"
 
           echo ::set-output name=tag::${GITHUB_REF#refs/*/}

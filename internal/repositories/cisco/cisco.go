@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os/exec"
 	"strings"
-	"warp-server/internal/dto"
+	"cisco-socks5/internal/dto"
 )
 
 const (

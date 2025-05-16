@@ -1,7 +1,7 @@
 build-darwin-arm64:
-	GOOS=darwin GOARCH=arm64 go build -o warp-server cmd/app/*
-	chmod +x warp-server
+	GOOS=darwin GOARCH=arm64 go build -o cisco-socks5 cmd/app/*
+	chmod +x cisco-socks5
 
 build:
-	go build -o warp-server cmd/app/*
-	chmod +x warp-server
+	go build -o cisco-socks5 cmd/app/*
+	chmod +x cisco-socks5
