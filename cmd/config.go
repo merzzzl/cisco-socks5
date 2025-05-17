@@ -35,7 +35,7 @@ func loadConfig() (*Config, error) {
 	flag.BoolVar(&cfg.fun, "fun", false, "magic!")
 	flag.Parse()
 
-	file, err := os.ReadFile(usr.HomeDir + "/" + ".warp.yaml")
+	file, err := os.ReadFile(usr.HomeDir + "/" + ".cisco-socks5.yaml")
 	if err != nil {
 		return nil, err
 	}
