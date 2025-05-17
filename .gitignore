@@ -1,4 +1,7 @@
-.idea
-vpn.sh
+/.vscode
+.DS_Store
+/.tool-versions
+/warp
+/.devcontainer
 vendor/
-cisco-socks5
+.idea/

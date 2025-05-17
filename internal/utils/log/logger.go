@@ -7,7 +7,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/miekg/dns"
 	"github.com/rs/zerolog"
 	zlog "github.com/rs/zerolog/log"
 )
@@ -57,54 +56,12 @@ func (e *Event) Err(err error) *Event {
 }
 
 // Msg logs a message with the given tag and message.
-func (e *Event) Msg(tag, msg string, args ...any) {
+func (e *Event) Msg(tag, msg string) {
 	if e == nil {
 		return
 	}
-	if len(args) > 0 {
-		msg = fmt.Sprintf(msg, args...)
-	}
+
 	e.e.Msg(Colorize(tag, 14) + " " + msg)
-}
-
-func NewLogger() *Logger {
-	return &Logger{}
-}
-
-type Logger struct{}
-
-func (l *Logger) Error(err error) {
-	Error().Err(err)
-}
-func (l *Logger) Info(format string, args ...interface{}) {
-	Info().Msg("Info", format, args...)
-}
-
-// DNS logs a DNS message.
-func (e *Event) DNS(m *dns.Msg) *Event {
-	names := make([]string, 0, len(m.Question))
-	ips := make([]string, 0, len(m.Answer))
-
-	for _, que := range m.Question {
-		names = append(names, que.Name)
-	}
-
-	for _, ans := range m.Answer {
-		ansA, ok := ans.(*dns.A)
-		if !ok {
-			continue
-		}
-
-		ips = append(ips, ansA.A.String())
-	}
-
-	e = e.Str("names", strings.Join(names, ","))
-
-	if len(ips) != 0 {
-		e = e.Str("ips", strings.Join(ips, ","))
-	}
-
-	return e
 }
 
 // Msgf logs a message with the given tag and format string.
