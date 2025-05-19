@@ -163,7 +163,7 @@ func (s *Service) ProxyServer(ctx context.Context) error {
 
 	lc := net.ListenConfig{}
 
-	list, err := lc.Listen(ctx, "tcp", ":8000")
+	list, err := lc.Listen(ctx, "tcp", "0.0.0.0:8000")
 	if err != nil {
 		return fmt.Errorf("failed to listen on port 8000: %w", err)
 	}
