@@ -93,7 +93,7 @@ func layout(g *gocui.Gui, svc *service.Service, logs <-chan string) error {
 		}()
 	}
 
-	if v, err := g.SetView("stats", maxX-20, 0, maxX-1, 5); err != nil {
+	if v, err := g.SetView("stats", maxX-20, 0, maxX-1, maxX-4); err != nil {
 		if !errors.Is(err, gocui.ErrUnknownView) {
 			return err
 		}
