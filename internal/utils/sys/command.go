@@ -9,7 +9,7 @@ import (
 func Command(cmd string, agrs ...any) (string, error) {
 	str := fmt.Sprintf(cmd, agrs...)
 
-	out, err := exec.Command("sh", "-c", str).Output()
+	out, err := exec.Command("sh", "-c", str).CombinedOutput()
 	if err != nil {
 		return "", fmt.Errorf("%s: %w", str, err)
 	}

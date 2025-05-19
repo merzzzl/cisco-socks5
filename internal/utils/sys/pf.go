@@ -11,7 +11,7 @@ func DisablePF() error {
 			return nil
 		}
 
-		return fmt.Errorf("disable pfctl error: %w", err)
+		return fmt.Errorf("disable pfctl error: %w (%s)", err, out)
 	}
 
 	return nil
