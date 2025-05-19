@@ -93,7 +93,7 @@ func layout(g *gocui.Gui, svc *service.Service, logs <-chan string) error {
 		}()
 	}
 
-	if v, err := g.SetView("stats", maxX-20, 0, maxX-1, maxX-5); err != nil {
+	if v, err := g.SetView("stats", maxX-20, 0, maxX-1, maxY-4); err != nil {
 		if !errors.Is(err, gocui.ErrUnknownView) {
 			return err
 		}
@@ -106,7 +106,7 @@ func layout(g *gocui.Gui, svc *service.Service, logs <-chan string) error {
 					v.Clear()
 
 					fmt.Fprintf(v, "Cisco: %s\n", boolToStr(svc.GetState().CiscoConnected))
-					fmt.Fprintf(v, "Filter:    %s\n", boolToStr(svc.GetState().PFDisabled))
+					fmt.Fprintf(v, "Filter: %s\n", boolToStr(svc.GetState().PFDisabled))
 					fmt.Fprintf(v, "Proxy: %s\n", boolToStr(svc.GetState().ProxyStarted))
 
 					return nil

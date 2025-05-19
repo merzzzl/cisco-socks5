@@ -132,7 +132,7 @@ func (s *Service) ProxyServer(ctx context.Context) error {
 	}()
 
 	server := socks5.NewServer(socks5.WithConnectMiddleware(func(_ context.Context, _ io.Writer, request *socks5.Request) error {
-		log.Info().Msgf("SOC", "new connection from %s", request.DestAddr.Address())
+		log.Info().Msgf("SOC", "connection to %s", request.DestAddr.Address())
 
 		return nil
 	}), socks5.WithLogger(&proxyLogger{}))
