@@ -6,12 +6,12 @@ import (
 )
 
 func DisablePF() error {
-	if body, err := Command("pfctl -d"); err != nil {
-		if strings.Contains(string(body), "pf not enabled") {
+	if out, err := Command("pfctl -d"); err != nil {
+		if strings.ContainsAny(out, "pf not enabled") {
 			return nil
 		}
 
-		return fmt.Errorf("disable pfctl error: %v\n %s", err, body)
+		return fmt.Errorf("disable pfctl error: %w", err)
 	}
 
 	return nil

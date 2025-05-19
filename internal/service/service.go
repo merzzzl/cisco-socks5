@@ -7,37 +7,36 @@ import (
 	"net"
 	"time"
 
-	"github.com/merzzzl/cisco-socks5/internal/utils/log"
-	"github.com/merzzzl/cisco-socks5/internal/utils/sys"
 	socks5 "github.com/things-go/go-socks5"
 	"golang.org/x/sync/errgroup"
+
+	"github.com/merzzzl/cisco-socks5/internal/utils/log"
+	"github.com/merzzzl/cisco-socks5/internal/utils/sys"
 )
 
 type Service struct {
-	status        *ServiceState
-	proxyCloser   func() error
+	status        *State
 	ciscoUser     string
 	ciscoPassword string
 	ciscoProfile  string
 }
 
-type ServiceState struct {
-	CiscoConnected       bool
-	CiscoReadyForConnect bool
-	PFDisabled           bool
-	ProxyStarted         bool
+type State struct {
+	CiscoConnected bool
+	PFDisabled     bool
+	ProxyStarted   bool
 }
 
 func New(ciscoUser, ciscoPassword, ciscoProfile string) *Service {
 	return &Service{
-		status:        &ServiceState{},
+		status:        &State{},
 		ciscoUser:     ciscoUser,
 		ciscoPassword: ciscoPassword,
 		ciscoProfile:  ciscoProfile,
 	}
 }
 
-func (s *Service) GetState() ServiceState {
+func (s *Service) GetState() State {
 	return *s.status
 }
 
@@ -109,7 +108,6 @@ func (s *Service) StartCisco(ctx context.Context) error {
 		closer()
 
 		s.status.CiscoConnected = false
-		s.status.CiscoReadyForConnect = false
 	}()
 
 	if err := sys.CiscoConnect(s.ciscoProfile, s.ciscoUser, s.ciscoPassword); err != nil {
@@ -117,23 +115,26 @@ func (s *Service) StartCisco(ctx context.Context) error {
 	}
 
 	for ctx.Err() == nil {
-		connected, readyForConnect, err := sys.CiscoCurrentState()
+		connected, _, err := sys.CiscoCurrentState()
 		if err != nil {
 			return fmt.Errorf("failed to get cisco state: %w", err)
 		}
 
 		s.status.CiscoConnected = connected
-		s.status.CiscoReadyForConnect = readyForConnect
-
-		if connected && readyForConnect {
-			time.Sleep(5 * time.Second)
-		}
 
 		if !connected {
 			if err := sys.CiscoConnect(s.ciscoProfile, s.ciscoUser, s.ciscoPassword); err != nil {
 				return fmt.Errorf("failed to connect to cisco: %w", err)
 			}
 		}
+
+		time.Sleep(5 * time.Second)
+
+		continue
+	}
+
+	if err := sys.CiscoDisconnect(); err != nil {
+		return fmt.Errorf("failed to disconnect cisco: %w", err)
 	}
 
 	return nil
@@ -154,7 +155,7 @@ func (s *Service) ProxyServer(ctx context.Context) error {
 		s.status.ProxyStarted = false
 	}()
 
-	server := socks5.NewServer(socks5.WithConnectMiddleware(func(ctx context.Context, writer io.Writer, request *socks5.Request) error {
+	server := socks5.NewServer(socks5.WithConnectMiddleware(func(_ context.Context, _ io.Writer, request *socks5.Request) error {
 		log.Info().Msgf("SOC", "new connection from %s", request.DestAddr.Address())
 
 		return nil
