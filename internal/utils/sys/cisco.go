@@ -129,3 +129,9 @@ func getCiscoNotice(notice string) string {
 		return ciscoUnknown
 	}
 }
+
+func DisablePF() error {
+	_, _ = Command("pfctl -d")
+
+	return nil
+}
