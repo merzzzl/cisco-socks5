@@ -88,7 +88,7 @@ func (s *Service) StartCisco(ctx context.Context) error {
 	_ = sys.DisablePF()
 
 	for ctx.Err() == nil {
-		connected, _, err := sys.CiscoCurrentState()
+		connected, wait, err := sys.CiscoCurrentState()
 		if err != nil {
 			return fmt.Errorf("failed to get cisco state: %w", err)
 		}
@@ -96,7 +96,7 @@ func (s *Service) StartCisco(ctx context.Context) error {
 		s.status.CiscoConnected = connected
 		s.status.PFDisabled = connected
 
-		if !connected {
+		if !connected && !wait {
 			if err := sys.CiscoConnect(s.ciscoProfile, s.ciscoUser, s.ciscoPassword); err != nil {
 				return fmt.Errorf("failed to connect to cisco: %w", err)
 			}
