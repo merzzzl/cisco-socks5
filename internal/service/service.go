@@ -55,14 +55,6 @@ func (s *Service) Start(ctx context.Context) error {
 	})
 
 	g.Go(func() error {
-		if err := s.DisablePF(ctx); err != nil {
-			return fmt.Errorf("failed to disable pf: %w", err)
-		}
-
-		return nil
-	})
-
-	g.Go(func() error {
 		if err := s.ProxyServer(ctx); err != nil {
 			return fmt.Errorf("failed to start proxy: %w", err)
 		}
@@ -74,36 +66,6 @@ func (s *Service) Start(ctx context.Context) error {
 		log.Error().Msgf("SYS", "failed to start service: %v", err)
 
 		return err
-	}
-
-	return nil
-}
-
-func (s *Service) DisablePF(ctx context.Context) error {
-	ctx, closer := context.WithCancel(ctx)
-
-	defer func() {
-		closer()
-
-		s.status.PFDisabled = false
-	}()
-
-	for ctx.Err() == nil {
-		if enabled, err := sys.CheckPF(); err != nil {
-			return fmt.Errorf("failed to check pf: %w", err)
-		} else if enabled {
-			log.Info().Msgf("SYS", "pf is enabled, disabling it")
-		} else {
-			continue
-		}
-
-		if err := sys.DisablePF(); err != nil {
-			log.Error().Msgf("SYS", "failed to disable pf: %v", err)
-		}
-
-		s.status.PFDisabled = true
-
-		time.Sleep(5 * time.Second)
 	}
 
 	return nil
