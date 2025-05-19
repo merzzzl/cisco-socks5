@@ -10,6 +10,7 @@ import (
 	"github.com/merzzzl/cisco-socks5/internal/utils/log"
 	"github.com/merzzzl/cisco-socks5/internal/utils/sys"
 	socks5 "github.com/things-go/go-socks5"
+	"golang.org/x/sync/errgroup"
 )
 
 type Service struct {
@@ -41,105 +42,142 @@ func (s *Service) GetState() ServiceState {
 }
 
 func (s *Service) Start(ctx context.Context) error {
-	tick := time.NewTicker(5 * time.Second)
+	ctx, closer := context.WithCancel(ctx)
+	defer closer()
 
-	for t := range tick.C {
-		restarted, err := s.IsRestarted()
+	g, ctx := errgroup.WithContext(ctx)
+
+	g.Go(func() error {
+		if err := s.StartCisco(ctx); err != nil {
+			return fmt.Errorf("failed to start cisco: %w", err)
+		}
+
+		return nil
+	})
+
+	g.Go(func() error {
+		if err := s.DisablePF(ctx); err != nil {
+			return fmt.Errorf("failed to disable pf: %w", err)
+		}
+
+		return nil
+	})
+
+	g.Go(func() error {
+		if err := s.ProxyServer(ctx); err != nil {
+			return fmt.Errorf("failed to start proxy: %w", err)
+		}
+
+		return nil
+	})
+
+	if err := g.Wait(); err != nil {
+		log.Error().Msgf("SYS", "failed to start service: %v", err)
+
+		return err
+	}
+
+	return nil
+}
+
+func (s *Service) DisablePF(ctx context.Context) error {
+	ctx, closer := context.WithCancel(ctx)
+
+	defer func() {
+		closer()
+
+		s.status.PFDisabled = false
+	}()
+
+	for ctx.Err() == nil {
+		if err := sys.DisablePF(); err != nil {
+			return fmt.Errorf("failed to disable pf: %w", err)
+		}
+
+		s.status.PFDisabled = true
+
+		time.Sleep(5 * time.Second)
+	}
+
+	return nil
+}
+
+func (s *Service) StartCisco(ctx context.Context) error {
+	ctx, closer := context.WithCancel(ctx)
+
+	defer func() {
+		closer()
+
+		s.status.CiscoConnected = false
+		s.status.CiscoReadyForConnect = false
+	}()
+
+	if err := sys.CiscoConnect(s.ciscoProfile, s.ciscoUser, s.ciscoPassword); err != nil {
+		return fmt.Errorf("failed to connect to cisco: %w", err)
+	}
+
+	for ctx.Err() == nil {
+		connected, readyForConnect, err := sys.CiscoCurrentState()
 		if err != nil {
-			log.Error().Err(err).Msg("SYS", "failed to check cisco")
-
-			continue
+			return fmt.Errorf("failed to get cisco state: %w", err)
 		}
 
-		if restarted {
-			log.Info().Msgf("SYS", "cisco restarted at %s", t.Format(time.RFC3339))
+		s.status.CiscoConnected = connected
+		s.status.CiscoReadyForConnect = readyForConnect
 
-			if s.proxyCloser != nil {
-				if err := s.proxyCloser(); err != nil {
-					log.Error().Err(err).Msg("SYS", "failed to close proxy")
-				}
+		if connected && readyForConnect {
+			time.Sleep(5 * time.Second)
+		}
 
-				s.proxyCloser = nil
+		if !connected {
+			if err := sys.CiscoConnect(s.ciscoProfile, s.ciscoUser, s.ciscoPassword); err != nil {
+				return fmt.Errorf("failed to connect to cisco: %w", err)
 			}
-		}
-
-		if s.proxyCloser == nil {
-			if s.proxyCloser, err = s.StartProxy(ctx); err != nil {
-				log.Error().Err(err).Msg("SYS", "failed to start proxy")
-
-				continue
-			}
-
-			log.Info().Msg("SYS", "proxy started")
-		}
-	}
-
-	if err := sys.CiscoDisconnect(); err != nil {
-		log.Error().Err(err).Msg("SYS", "failed to disconnect cisco")
-	}
-
-	if s.proxyCloser != nil {
-		if err := s.proxyCloser(); err != nil {
-			log.Error().Err(err).Msg("SYS", "failed to close proxy")
 		}
 	}
 
 	return nil
 }
 
-func (s *Service) IsRestarted() (bool, error) {
-	connected, readyForConnect, err := sys.CiscoCurrentState()
-	if err != nil {
-		return false, fmt.Errorf("failed to get cisco state: %w", err)
-	}
+type proxyLogger struct{}
 
-	s.status.CiscoConnected = connected
-	s.status.CiscoReadyForConnect = readyForConnect
-
-	if !connected {
-		if err := sys.CiscoConnect(s.ciscoProfile, s.ciscoUser, s.ciscoPassword); err != nil {
-			return true, fmt.Errorf("failed to connect to cisco: %w", err)
-		}
-
-		s.status.CiscoConnected = true
-		s.status.CiscoReadyForConnect = false
-		s.status.PFDisabled = false
-
-		if err := sys.DisablePF(); err != nil {
-			return false, fmt.Errorf("failed to disable pf: %w", err)
-		}
-
-		s.status.PFDisabled = true
-	}
-
-	return false, nil
+func (p *proxyLogger) Errorf(format string, args ...interface{}) {
+	log.Error().Msgf("SOC", format, args...)
 }
 
-func (s *Service) StartProxy(ctx context.Context) (func() error, error) {
+func (s *Service) ProxyServer(ctx context.Context) error {
+	ctx, closer := context.WithCancel(ctx)
+
+	defer func() {
+		closer()
+
+		s.status.ProxyStarted = false
+	}()
+
 	server := socks5.NewServer(socks5.WithConnectMiddleware(func(ctx context.Context, writer io.Writer, request *socks5.Request) error {
 		log.Info().Msgf("SOC", "new connection from %s", request.DestAddr.Address())
 
 		return nil
-	}))
+	}), socks5.WithLogger(&proxyLogger{}))
 
 	lc := net.ListenConfig{}
 
 	list, err := lc.Listen(ctx, "tcp", ":8000")
 	if err != nil {
-		return nil, fmt.Errorf("failed to listen on port 8000: %w", err)
+		return fmt.Errorf("failed to listen on port 8000: %w", err)
 	}
 
 	go func() {
-		if err := server.Serve(list); err != nil {
-			s.status.ProxyStarted = false
-		}
+		<-ctx.Done()
+
+		_ = list.Close()
 	}()
 
 	s.status.ProxyStarted = true
 
-	return func() error {
-		s.status.ProxyStarted = false
+	if err := server.Serve(list); err != nil {
+		return fmt.Errorf("failed to start proxy: %w", err)
+	}
 
-		return list.Close()
-	}, nil
+	return nil
 }
