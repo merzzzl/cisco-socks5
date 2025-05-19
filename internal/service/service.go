@@ -98,7 +98,7 @@ func (s *Service) DisablePF(ctx context.Context) error {
 		}
 
 		if err := sys.DisablePF(); err != nil {
-			return fmt.Errorf("failed to disable pf: %w", err)
+			log.Error().Msgf("SYS", "failed to disable pf: %v", err)
 		}
 
 		s.status.PFDisabled = true
