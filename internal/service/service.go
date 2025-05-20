@@ -87,6 +87,8 @@ func (s *Service) StartCisco(ctx context.Context) error {
 
 	_ = sys.DisablePF()
 
+	maxRetries := 3
+
 	for ctx.Err() == nil {
 		connected, wait, err := sys.CiscoCurrentState()
 		if err != nil {
@@ -98,9 +100,16 @@ func (s *Service) StartCisco(ctx context.Context) error {
 
 		if !connected && !wait && err == nil {
 			if err := sys.CiscoConnect(s.ciscoProfile, s.ciscoUser, s.ciscoPassword); err != nil {
+				if maxRetries == 0 {
+					return fmt.Errorf("failed to connect to cisco: %w", err)
+				}
+
 				log.Error().Err(err).Msgf("CIS", "failed to connect to cisco: %v", err)
+
+				maxRetries--
 			} else {
 				_ = sys.DisablePF()
+				maxRetries = 3
 			}
 		}
 
